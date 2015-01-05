@@ -205,8 +205,8 @@ class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
         $value = intval( $value );
 
         if ( ! empty( $this->publish_with_parent ) || ! empty( $this->reciprocal ) ) {
-            // There are no permissions in cron, but no changes are coming from a user either
-            if ( ! defined( 'DOING_CRON' ) || ! DOING_CRON ) {
+            // There are no permissions in cron and WP_CLI, but no changes are coming from a user either
+            if ( ( ! defined( 'WP_CLI' ) || ! WP_CLI ) && ( ! defined( 'DOING_CRON' ) || ! DOING_CRON ) ) {
                 $post_type_obj = get_post_type_object( get_post_type( $value ) );
                 if ( empty( $post_type_obj->cap->edit_post ) || ! current_user_can( $post_type_obj->cap->edit_post, $value ) ) {
                     wp_die( esc_html( sprintf( __( 'Tried to alter %s %d through field "%s", which user is not permitted edit.', 'fieldmanager' ), $post_type_obj->name, $value, $field->name ) ) );
