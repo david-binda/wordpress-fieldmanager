@@ -1,7 +1,12 @@
 <?php
 /**
- * Class file for draggable post selector field
- * @package Fieldmanager
+ * An interface for dragging posts from a repository to assorted buckets.
+ *
+ * This field might be deprecated in a future version of Fieldmanager. It is
+ * preferable to use {@link https://github.com/alleyinteractive/fm-zones}
+ * instead.
+ *
+ * @package Fieldmanager_Field
  */
 class Fieldmanager_DraggablePost extends Fieldmanager_Field {
 
@@ -44,10 +49,7 @@ class Fieldmanager_DraggablePost extends Fieldmanager_Field {
 		// Refuse to allow more than one instance of this field type.
 		$this->limit = 1;
 
-		wp_enqueue_script( 'jquery-ui-draggable' );
-		wp_enqueue_script( 'jquery-ui-droppable' );
-		wp_enqueue_script( 'jquery-ui-sortable' );
-		fm_add_script( 'fm_draggablepost_js', 'js/fieldmanager-draggablepost.js' );
+		fm_add_script( 'fm_draggablepost_js', 'js/fieldmanager-draggablepost.js', array( 'jquery-ui-draggable', 'jquery-ui-droppable', 'jquery-ui-sortable' ) );
 		fm_add_style( 'fm_draggablepost_css', 'css/fieldmanager-draggablepost.css' );
 	}
 
@@ -202,7 +204,7 @@ class Fieldmanager_DraggablePost extends Fieldmanager_Field {
 			$li_inner .= sprintf( '<small><input type="checkbox" value="1" name="%s[_image_flags][%d]" %s /> Use image?</small>', $this->get_form_name(), $post_id, $checked );
 		}
 
-		$li = $li . apply_filters( 'fieldmanager_draggablepost_li_content', array('li_inner' => $li_inner, 'post_id' => $post_id) ) . '</li>';
+		$li = $li . apply_filters( 'fieldmanager_draggablepost_li_content', $li_inner, $post_id ) . '</li>';
 		return $li;
 	}
 

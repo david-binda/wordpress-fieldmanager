@@ -1,17 +1,15 @@
 <?php
-/**
- * @package Fieldmanager_Datasource
- */
 
 /**
- * Data source for WordPress Posts, for autocomplete and option types.
+ * Datasource to populate autocomplete and option fields with WordPress Posts.
+ *
  * @package Fieldmanager_Datasource
  */
 class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
 
     /**
      * Supply a function which returns a list of posts; takes one argument,
-     * a possible fragement
+     * a possible fragment
      */
     public $query_callback = Null;
 
@@ -67,8 +65,14 @@ class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
      */
     public $only_save_to_post_parent = False;
 
-    // constructor not required for this datasource; options are just set to keys,
-    // which Fieldmanager_Datasource does.
+    public function __construct( $options = array() ) {
+        parent::__construct( $options );
+
+        // Infer $save_to_post_parent if $only_save_to_post_parent
+        if ( $this->only_save_to_post_parent ) {
+            $this->save_to_post_parent = true;
+        }
+    }
 
     /**
      * Get a post title by post ID
@@ -105,11 +109,15 @@ class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
             if ( preg_match( '/^https?\:/i', $fragment ) ) {
                 $url = esc_url( $fragment );
                 $url_parts = parse_url( $url );
-                $get_vars = array();
-                parse_str( $url_parts['query'], $get_vars );
-                if ( !empty( $get_vars['post'] )  ) {
+
+                if ( ! empty( $url_parts['query'] ) )  {
+                    $get_vars = array();
+                    parse_str( $url_parts['query'], $get_vars );
+                }
+
+                if ( ! empty( $get_vars['post'] )  ) {
                     $post_id = intval( $get_vars['post'] );
-                } elseif ( !empty( $get_vars['p'] ) ) {
+                } elseif ( ! empty( $get_vars['p'] ) ) {
                     $post_id = intval( $get_vars['p'] );
                 } else {
                     $post_id = fm_url_to_post_id( $fragment );
@@ -209,7 +217,7 @@ class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
             if ( ( ! defined( 'WP_CLI' ) || ! WP_CLI ) && ( ! defined( 'DOING_CRON' ) || ! DOING_CRON ) ) {
                 $post_type_obj = get_post_type_object( get_post_type( $value ) );
                 if ( empty( $post_type_obj->cap->edit_post ) || ! current_user_can( $post_type_obj->cap->edit_post, $value ) ) {
-                    wp_die( esc_html( sprintf( __( 'Tried to alter %s %d through field "%s", which user is not permitted edit.', 'fieldmanager' ), $post_type_obj->name, $value, $field->name ) ) );
+                    wp_die( esc_html( sprintf( __( 'Tried to alter %s %d through field "%s", which user is not permitted to edit.', 'fieldmanager' ), $post_type_obj->name, $value, $field->name ) ) );
                 }
             }
             $this->presave_status_transition( $field, $value );
@@ -259,7 +267,10 @@ class Fieldmanager_Datasource_Post extends Fieldmanager_Datasource {
      */
     public function preload_alter_values( Fieldmanager_Field $field, $values ) {
         if ( $this->only_save_to_post_parent ) {
-            return array( wp_get_post_parent_id( $field->data_id ) );
+            $post_parent = wp_get_post_parent_id( $field->data_id );
+            if ( $post_parent ) {
+                return ( 1 == $field->limit && empty( $field->multiple ) ) ? $post_parent : array( $post_parent );
+            }
         }
         return $values;
     }

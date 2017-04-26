@@ -25,12 +25,23 @@ fm.autocomplete = {
 				}
 				if ( $el.data( 'action' ) ) {
 					ac_params.source = function( request, response ) {
+						// Check for custom args
+						var custom_args_js_event = $el.data( 'customArgsJsEvent' );
+						var custom_data = '';
+						if ( 'undefined' !== typeof custom_args_js_event && null !== custom_args_js_event ) {
+							var custom_result = $el.triggerHandler( custom_args_js_event );
+							if ( 'undefined' !== typeof custom_result && null !== custom_result ) {
+								custom_data = custom_result;
+							}
+						}
+
 						$.post( ajaxurl, {
 							action: $el.data( 'action' ),
 							fm_context: $el.data( 'context' ),
 							fm_subcontext: $el.data( 'subcontext' ),
 							fm_autocomplete_search: request.term,
-							fm_search_nonce: fm_search.nonce
+							fm_search_nonce: fm_search.nonce,
+							fm_custom_args: custom_data
 						}, function( result ) {
 							response( result );
 						} );
@@ -46,7 +57,14 @@ fm.autocomplete = {
 							$hidden.val( '' );
 							$el.val( '' );
 						}
-					}
+					};
+
+					// Handle the user deleting the input text, which is not an AC 'change'.
+					$( this ).on( 'keyup', function( e ) {
+						if ( e.target && '' === $( e.target ).val() ) {
+							$hidden.val( '' ).trigger( 'change' );
+						}
+					});
 				} else {
 					$( this ).on( 'keyup', function( e ) {
 						if ( e.keyCode == 27 || e.keyCode == 13 ) {

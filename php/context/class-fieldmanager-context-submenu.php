@@ -1,13 +1,12 @@
 <?php
-/**
- * @package Fieldmanager_Context
- */
 
 /**
- * Use fieldmanager to create meta boxes on
+ * Use fieldmanager to create arbitrary pages in the WordPress admin and save
+ * data primarily to options.
+ *
  * @package Fieldmanager_Context
  */
-class Fieldmanager_Context_Submenu extends Fieldmanager_Context {
+class Fieldmanager_Context_Submenu extends Fieldmanager_Context_Storable {
 
 	/**
 	 * @var string
@@ -46,6 +45,14 @@ class Fieldmanager_Context_Submenu extends Fieldmanager_Context {
 	public $submit_button_label = Null;
 
 	/**
+	 * The "success" message displayed after options are saved. Defaults to
+	 * "Options updated".
+	 *
+	 * @var string|null
+	 */
+	public $updated_message = null;
+
+	/**
 	 * @var string
 	 * For submenu pages, set autoload to true or false
 	 */
@@ -67,10 +74,10 @@ class Fieldmanager_Context_Submenu extends Fieldmanager_Context {
 		$this->parent_slug = $parent_slug;
 		$this->page_title = $page_title;
 		$this->capability = $capability;
+		$this->updated_message = __( 'Options updated', 'fieldmanager' );
 		$this->uniqid = $this->fm->get_element_id() . '_form';
-		if ( !$already_registered )  {
+		if ( ! $already_registered )  {
 			add_action( 'admin_menu', array( $this, 'register_submenu_page' ) );
-			add_filter( 'fm_submenu_presave_data', 'stripslashes_deep' );
 		}
 		add_action( 'admin_init', array( $this, 'handle_submenu_save' ) );
 	}
@@ -92,17 +99,17 @@ class Fieldmanager_Context_Submenu extends Fieldmanager_Context {
 		?>
 		<div class="wrap">
 			<?php if ( ! empty( $_GET['msg'] ) && 'success' == $_GET['msg'] ) : ?>
-				<div class="updated success"><p><?php esc_html_e( 'Options updated', 'fieldmanager' ); ?></p></div>
+				<div class="updated success"><p><?php echo esc_html( $this->updated_message ); ?></p></div>
 			<?php endif ?>
 
-			<h2><?php echo esc_html( $this->page_title ) ?></h2>
+			<h1><?php echo esc_html( $this->page_title ) ?></h1>
 
 			<form method="POST" id="<?php echo esc_attr( $this->uniqid ) ?>">
 				<div class="fm-submenu-form-wrapper">
 					<input type="hidden" name="fm-options-action" value="<?php echo sanitize_title( $this->fm->name ) ?>" />
 					<?php $this->render_field( array( 'data' => $values ) ); ?>
 				</div>
-				<?php submit_button( $this->submit_button_label, 'submit', 'fm-submit' ) ?>
+				<?php submit_button( $this->submit_button_label, 'primary', 'fm-submit' ) ?>
 			</form>
 		</div>
 		<?php
@@ -143,6 +150,9 @@ class Fieldmanager_Context_Submenu extends Fieldmanager_Context {
 		$current = get_option( $this->fm->name, null );
 		$data = $this->prepare_data( $current, $data );
 		$data = apply_filters( 'fm_submenu_presave_data', $data, $this );
+		if ( $this->fm->skip_save ) {
+			return true;
+		}
 
 		if ( isset( $current ) ) {
 			update_option( $this->fm->name, $data );
